@@ -1,3 +1,4 @@
+
 pipeline.prepareIndata <- function()
 {
   indata.sample.mean <<- colMeans(indata)

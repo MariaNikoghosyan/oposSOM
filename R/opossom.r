@@ -40,6 +40,8 @@ opossom.new <- function(preferences=NULL)
   env$unique.protein.ids <- NULL
   env$WAD.g.m <- NULL
   env$write.csv2 <- write.csv2
+  #added
+  env$minor.major.alleles <- NULL
 
   # Generate some additional letters
   env$LETTERS <- c(LETTERS, as.vector(sapply(1:10, function(x) {
@@ -67,6 +69,8 @@ opossom.new <- function(preferences=NULL)
                           database.biomart = "ENSEMBL_MART_ENSEMBL",
                           database.host = "jan2019.archive.ensembl.org",
                           database.dataset = "auto",
+                          database.biomart.snps = 'ENSEMBL_MART_SNP',
+                          database.dataset.snps = 'hsapiens_snp',
                           database.id.type = "",
                           standard.spot.modules = "dmap",
                           spot.coresize.modules = 3,
@@ -76,7 +80,10 @@ opossom.new <- function(preferences=NULL)
                           adjust.autogroup.number = 0,
                           feature.centralization = TRUE,
                           sample.quantile.normalization = TRUE,
-                          pairwise.comparison.list = NULL)
+                          pairwise.comparison.list = NULL,
+                          indata.transformation = 'minor.major.alleles', # disease.assocoated.alleles)
+                          SNPs.analysis = TRUE # chenge to FALSE
+                          ) 
 
   # Merge user supplied information
   if (!is.null(preferences))
@@ -117,6 +124,11 @@ opossom.run <- function(env)
     env$preferences$system.info <- Sys.info()
     env$preferences$session.info <- sessionInfo()
     env$preferences$started <- format(Sys.time(), "%a %d %b %Y %X")
+  }
+  #added
+  if(env$preferences$SNPs.analysis)
+  {
+    util.call(pipeline.indata.transformation, env)
   }
   
   if(env$preferences$activated.modules$reporting)

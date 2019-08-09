@@ -6,6 +6,11 @@ pipeline.checkInputParameters <- function()
     util.warn("Invalid value of \"dataset.name\". Using \"Unnamed\"")
     preferences$dataset.name <<- "Unnamed"
   }
+  if (!is.character(preferences$database.dataset.snps))
+  {
+    util.warn("Invalid value of \"dataset.name.snps\". Using \"Unnamed\"")
+    preferences$dataset.name <<- "Unnamed"
+  }
   
   if ( preferences$dim.1stLvlSom!="auto" && !is.numeric(preferences$dim.1stLvlSom) || preferences$dim.1stLvlSom < 1)
   {
@@ -44,6 +49,11 @@ pipeline.checkInputParameters <- function()
   if (!is.character(preferences$database.biomart))
   {
     util.warn("Invalid value of \"database.biomart\". Using \"\"")
+    preferences$database.biomart <<- ""
+  }
+  if (!is.character(preferences$database.biomart.snps))
+  {
+    util.warn("Invalid value of \"database.biomart.snps\". Using \"\"")
     preferences$database.biomart <<- ""
   }
   
