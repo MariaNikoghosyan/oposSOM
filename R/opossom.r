@@ -42,7 +42,10 @@ opossom.new <- function(preferences=NULL)
   env$write.csv2 <- write.csv2
   #added
   env$minor.major.alleles <- NULL
-
+  env$disease.alleles <- NULL
+ # env$multiallelic.snps <- NULL
+  
+  
   # Generate some additional letters
   env$LETTERS <- c(LETTERS, as.vector(sapply(1:10, function(x) {
     return(paste(LETTERS, x, sep=""))
@@ -125,7 +128,7 @@ opossom.run <- function(env)
     env$preferences$session.info <- sessionInfo()
     env$preferences$started <- format(Sys.time(), "%a %d %b %Y %X")
   }
-  #added
+  #added, transform indata into numeric matrix
   if(env$preferences$SNPs.analysis)
   {
     util.call(pipeline.indata.transformation, env)
