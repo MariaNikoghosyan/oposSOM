@@ -20,66 +20,100 @@ pipeline.prepareAnnotation <- function()
   }
   
   chromosome.list <<- list()
-
-  if (!util.call(biomart.available, environment()))
-  {
-    util.warn("Requested biomaRt host seems to be down.")
-    util.warn("Disabling geneset analysis.")
-    preferences$activated.modules$geneset.analysis <<- FALSE
-    return()
-  }
-
-  if (!preferences$database.dataset %in% c("auto", ""))
-  {
-    biomart.table <- NULL
-
-    try({
-      mart <- useMart(biomart=preferences$database.biomart, host=preferences$database.host)
-      mart <- useDataset(preferences$database.dataset, mart=mart)
-
-      query = c("hgnc_symbol","wikigene_name","uniprot_genename")[ which( c("hgnc_symbol","wikigene_name","uniprot_genename") %in% listAttributes(mart)[,1] ) ][1]
-      suppressWarnings({  biomart.table <-
-        getBM(c(preferences$database.id.type, query),
-              preferences$database.id.type,
-              rownames(indata)[seq(1,nrow(indata),length.out=100)],
-              mart, checkFilters=FALSE)  })
-    }, silent=TRUE)
-
-    if (is.null(biomart.table) || nrow(biomart.table) == 0)
-    {
-      util.warn("Invalid annotation parameters. Trying autodetection...")
-      preferences$database.dataset <<- "auto"
-    }
-  }
-
-  if (preferences$database.dataset == "auto")
-  {
-    util.call(pipeline.detectEnsemblDataset, environment())
-  }
-
-  if (preferences$database.dataset == "" || preferences$database.id.type == "")
-  {
-    util.warn("Could not find valid annotation parameters.")
-    util.warn("Disabling geneset analysis.")
-    preferences$activated.modules$geneset.analysis <<- FALSE
-    return()
-  }
+  
+  #### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ## add if and remove coment, is minor alleles should be callculated based biomart data
   
 
+  # if (!util.call(biomart.available, environment()))
+  # {
+  #   util.warn("Requested biomaRt host seems to be down.")
+  #   util.warn("Disabling geneset analysis.")
+  #   preferences$activated.modules$geneset.analysis <<- FALSE
+  #   return()
+  # }
+  # 
+  # if (!preferences$database.dataset %in% c("auto", ""))
+  # {
+  #   biomart.table <- NULL
+  # 
+  #   try({
+  #     mart <- useMart(biomart=preferences$database.biomart, host=preferences$database.host)
+  #     mart <- useDataset(preferences$database.dataset, mart=mart)
+  # 
+  #     query = c("hgnc_symbol","wikigene_name","uniprot_genename")[ which( c("hgnc_symbol","wikigene_name","uniprot_genename") %in% listAttributes(mart)[,1] ) ][1]
+  #     suppressWarnings({  biomart.table <-
+  #       getBM(c(preferences$database.id.type, query),
+  #             preferences$database.id.type,
+  #             rownames(indata)[seq(1,nrow(indata),length.out=100)],
+  #             mart, checkFilters=FALSE)  })
+  #   }, silent=TRUE)
+  # 
+  #   if (is.null(biomart.table) || nrow(biomart.table) == 0)
+  #   {
+  #     util.warn("Invalid annotation parameters. Trying autodetection...")
+  #     preferences$database.dataset <<- "auto"
+  #   }
+  # }
+  # 
+  # if (preferences$database.dataset == "auto")
+  # {
+  #   util.call(pipeline.detectEnsemblDataset, environment())
+  # }
+  # 
+  # if (preferences$database.dataset == "" || preferences$database.id.type == "")
+  # {
+  #   util.warn("Could not find valid annotation parameters.")
+  #   util.warn("Disabling geneset analysis.")
+  #   preferences$activated.modules$geneset.analysis <<- FALSE
+  #   return()
+  # }
+  # 
+  biomart.table.snp <- NULL
+  
+  
+  mart_snp <- useMart(biomart=preferences$database.biomart.snps, host=preferences$database.host)
+  mart_snp <- useDataset(preferences$database.dataset.snps, mart=mart_snp)
+  
+  suppressWarnings({  biomart.table.snp <-
+    getBM(c('refsnp_id', 'ensembl_gene_stable_id'),
+          preferences$database.id.type.snp,
+          rownames(indata),
+          mart_snp, checkFilters=FALSE)  })
+
+  
+
+  biomart.table.snp <- biomart.table.snp[which(biomart.table.snp$ensembl_gene_stable_id != ''),]
+  
   mart <- useMart(biomart=preferences$database.biomart, host=preferences$database.host)
-  mart <- useDataset(preferences$database.dataset, mart=mart)
+  # mart <- useDataset(preferences$database.dataset, mart=mart)
+  
+  mart <- useDataset('hsapiens_gene_ensembl', mart=mart)
 
   query = c("wikigene_name","hgnc_symbol","uniprot_genename")[ which( c("wikigene_name","hgnc_symbol","uniprot_genename") %in% listAttributes(mart)[,1] ) ][1]
+  # suppressWarnings({  biomart.table <- getBM(c(preferences$database.id.type,
+  #                          query,"description","ensembl_gene_id",
+  #                          "chromosome_name","band","start_position"),
+  #                        preferences$database.id.type,
+  #                        rownames(indata), mart, checkFilters=FALSE)  })
+  
+  preferences$database.id.type <<- 'ensembl_gene_id'
+  
   suppressWarnings({  biomart.table <- getBM(c(preferences$database.id.type,
-                           query,"description","ensembl_gene_id",
-                           "chromosome_name","band","start_position"),
-                         preferences$database.id.type,
-                         rownames(indata), mart, checkFilters=FALSE)  })
+                                               query,"description","ensembl_gene_id",
+                                               "chromosome_name","band","start_position"),
+                                             preferences$database.id.type,
+                                             biomart.table.snp[,2], mart, checkFilters=FALSE)  })
 
-  biomart.table <- biomart.table[ which(biomart.table[,1]%in%rownames(indata)), ]
+  
+  colnames(biomart.table.snp)[2] <- colnames(biomart.table)[1]
+  
+  biomart.table <- merge(biomart.table, biomart.table.snp, by = 'ensembl_gene_id')
+  biomart.table <- biomart.table[ which(biomart.table[,'refsnp_id']%in%rownames(indata)), ]
   
   if (nrow(biomart.table) == 0)
-  {
+  
+    {
     util.warn("Could not resolve rownames. Possibly wrong database.id.type")
     util.warn("Disabling geneset analysis.")
     preferences$activated.modules$geneset.analysis <<- FALSE
@@ -89,25 +123,53 @@ pipeline.prepareAnnotation <- function()
     names(h) <- biomart.table[,1]
     gene.info$names[as.character(unique(biomart.table[,1]))] <<- h[as.character(unique(biomart.table[,1]))]
 
+    # h <- biomart.table[,"description"]
+    # names(h) <- biomart.table[,1]
+    # gene.info$descriptions[as.character(unique(biomart.table[,1]))] <<- h[as.character(unique(biomart.table[,1]))]
+    # 
+    # h <- biomart.table[,"ensembl_gene_id"]
+    # names(h) <- biomart.table[,1]
+    # gene.info$ids[as.character(unique(biomart.table[,1]))] <<- h[as.character(unique(biomart.table[,1]))]
+    # 
+    # h <- biomart.table[,"chromosome_name"]
+    # names(h) <- biomart.table[,1]
+    # gene.info$chr.name[as.character(unique(biomart.table[,1]))] <<- h[as.character(unique(biomart.table[,1]))]
+    # 
+    # h <- gsub("\\..*$","", biomart.table[,"band"])
+    # names(h) <- biomart.table[,1]
+    # gene.info$chr.band[as.character(unique(biomart.table[,1]))] <<- h[as.character(unique(biomart.table[,1]))]
+    # 
+    # h <- biomart.table[,"start_position"]
+    # names(h) <- biomart.table[,1]
+    # gene.info$chr.start[as.character(unique(biomart.table[,1]))] <<- h[as.character(unique(biomart.table[,1]))]
+    
+    
+    
+    
+    h <- biomart.table[,2]
+    names(h) <- biomart.table[,'refsnp_id']
+    gene.info$names[as.character(unique(biomart.table[,'refsnp_id']))] <<- h[as.character(unique(biomart.table[,'refsnp_id']))]
+    
     h <- biomart.table[,"description"]
-    names(h) <- biomart.table[,1]
-    gene.info$descriptions[as.character(unique(biomart.table[,1]))] <<- h[as.character(unique(biomart.table[,1]))]
-
+    names(h) <- biomart.table[,'refsnp_id']
+    gene.info$descriptions[as.character(unique(biomart.table[,'refsnp_id']))] <<- h[as.character(unique(biomart.table[,'refsnp_id']))]
+    
     h <- biomart.table[,"ensembl_gene_id"]
-    names(h) <- biomart.table[,1]
-    gene.info$ids[as.character(unique(biomart.table[,1]))] <<- h[as.character(unique(biomart.table[,1]))]
-
+    names(h) <- biomart.table[,'refsnp_id']
+    gene.info$ids[as.character(unique(biomart.table[,'refsnp_id']))] <<- h[as.character(unique(biomart.table[,'refsnp_id']))]
+    
     h <- biomart.table[,"chromosome_name"]
-    names(h) <- biomart.table[,1]
-    gene.info$chr.name[as.character(unique(biomart.table[,1]))] <<- h[as.character(unique(biomart.table[,1]))]
+    names(h) <- biomart.table[,'refsnp_id']
+    gene.info$chr.name[as.character(unique(biomart.table[,'refsnp_id']))] <<- h[as.character(unique(biomart.table[,'refsnp_id']))]
     
     h <- gsub("\\..*$","", biomart.table[,"band"])
-    names(h) <- biomart.table[,1]
-    gene.info$chr.band[as.character(unique(biomart.table[,1]))] <<- h[as.character(unique(biomart.table[,1]))]
+    names(h) <- biomart.table[,'refsnp_id']
+    gene.info$chr.band[as.character(unique(biomart.table[,'refsnp_id']))] <<- h[as.character(unique(biomart.table[,'refsnp_id']))]
     
     h <- biomart.table[,"start_position"]
-    names(h) <- biomart.table[,1]
-    gene.info$chr.start[as.character(unique(biomart.table[,1]))] <<- h[as.character(unique(biomart.table[,1]))]
+    names(h) <- biomart.table[,'refsnp_id']
+    gene.info$chr.start[as.character(unique(biomart.table[,'refsnp_id']))] <<- h[as.character(unique(biomart.table[,'refsnp_id']))]
+    
     
 
     gene.positions.table <- cbind( gene.info$chr.name, gene.info$chr.band )
@@ -179,7 +241,21 @@ pipeline.prepareAnnotation <- function()
   })
 
 
+  
   gs.def.list <<- gs.def.list[ which(sapply(sapply(gs.def.list, head, 1), length) >= 2) ]
+  
+  ##########
+  ## added
+  
+  # for (i in 1:length(gs.def.list))
+  #   {
+  #   names(gs.def.list[[i]]$Genes) <- sapply(gs.def.list[[i]]$Genes, function(x)
+  #     {
+  #     names(x) <- names(gene.info$ids[which(gene.info$ids %in% x)])
+  #   })
+  #   
+  # }
+  
 
   if (length(gs.def.list) > 0)
   {

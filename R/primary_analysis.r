@@ -58,3 +58,4 @@ pipeline.generateSOM <- function()
   names(gene.info$coordinates) <<- rownames(indata)
   
 }
+

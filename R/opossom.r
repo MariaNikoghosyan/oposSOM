@@ -75,6 +75,7 @@ opossom.new <- function(preferences=NULL)
                           database.biomart.snps = 'ENSEMBL_MART_SNP',
                           database.dataset.snps = 'hsapiens_snp',
                           database.id.type = "",
+                          database.id.type.snp = 'snp_filter',
                           standard.spot.modules = "dmap",
                           spot.coresize.modules = 3,
                           spot.threshold.modules = 0.95,
@@ -84,7 +85,7 @@ opossom.new <- function(preferences=NULL)
                           feature.centralization = TRUE,
                           sample.quantile.normalization = TRUE,
                           pairwise.comparison.list = NULL,
-                          indata.transformation = 'minor.major.alleles', # disease.assocoated.alleles)
+                          indata.transformation = 'minor.major.alleles', # disease.assocoated.alleles, global.minor.major.alleles
                           SNPs.analysis = TRUE # chenge to FALSE
                           ) 
 
@@ -118,6 +119,16 @@ opossom.run <- function(env)
 
   #### Preparation & Calculation part ####
   
+  if (!util.call(pipeline.checkInputParametersForBiomart, env)) {
+    return()
+  }
+  
+  #added, transform indata into numeric matrix
+  if(env$preferences$SNPs.analysis) 
+  {
+    util.call(pipeline.indata.transformation, env)
+  }
+  
   if (!util.call(pipeline.checkInputParameters, env)) {
     return()
   }
@@ -128,11 +139,6 @@ opossom.run <- function(env)
     env$preferences$session.info <- sessionInfo()
     env$preferences$started <- format(Sys.time(), "%a %d %b %Y %X")
   }
-  #added, transform indata into numeric matrix
-  if(env$preferences$SNPs.analysis)
-  {
-    util.call(pipeline.indata.transformation, env)
-  }
   
   if(env$preferences$activated.modules$reporting)
   {
@@ -142,8 +148,9 @@ opossom.run <- function(env)
 
     if(env$preferences$activated.modules$primary.analysis)
     {
-      util.call(pipeline.qualityCheck, env)
+      util.call(pipeline.qualityCheck, env) #############
     } 
+    
   }
 
   if(env$preferences$activated.modules$primary.analysis || env$preferences$activated.modules$geneset.analysis)

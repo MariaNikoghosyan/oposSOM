@@ -2,7 +2,183 @@
 
 pipeline.indata.transformation <- function()
 {
-  #minor allele
+  # global minor allele encoding
+  if(preferences$indata.transformation == 'global.minor.major.alleles')
+  {
+    util.call(pipeline.BiomartAvailabilityForIndataTransformation, env)
+    if(preferences$indata.transformation == 'global.minor.major.alleles')
+    {
+      biomart.table <- NULL
+      
+      try({
+        mart <- useMart(biomart=preferences$database.biomart.snps, host=preferences$database.host)
+        mart <- useDataset(preferences$database.dataset.snps, mart=mart)
+        
+        
+        
+        #query = c("refsnp_id","chr_name","ensembl_gene_stable_id")[ which( c("refsnp_id","chr_name","ensembl_gene_stable_id") %in% listAttributes(mart)[,1] ) ][1:2]
+        suppressWarnings({  biomart.table <-
+          getBM(c('refsnp_id', 'allele','minor_allele', 'chr_name'),
+                preferences$database.id.type.snp,
+                rownames(indata),
+                mart, checkFilters=FALSE)  })
+      }, silent=TRUE)
+      
+      # remove all snps which are mapped on other chromosoms ???? 
+      biomart.table <- biomart.table[which(biomart.table$chr_name %in% c(1:22, 'X', 'Y')),]
+      
+      #   defien all multyallelic snps
+      ind <- c(0)
+      for(i in 1:nrow(biomart.table))
+      {
+        if(lengths(regmatches(biomart.table$allele[i], gregexpr("/", biomart.table$allele[i]))) > 1)
+        {
+          ind <- c(ind,i)
+        }
+      }
+      if(length(ind) > 1)
+      {
+        biomart.table <- biomart.table[-ind,]
+      }
+      
+      # seperate two alleles into different columns
+      biomart.table$allele_1 <- NA
+      
+      biomart.table$allele_2 <- NA
+      
+      for (i in 1:nrow(biomart.table)) 
+      {
+        k <- stringr::str_split(biomart.table$allele[i], "/",n = Inf, simplify = FALSE)[[1]]
+        biomart.table$allele_1[i] <- k[1]
+        biomart.table$allele_2[i] <- k[2]
+      }
+      
+      
+      biomart.table <- biomart.table[which(biomart.table$allele_1 == 'A' |
+                                             biomart.table$allele_1 == 'T' |
+                                             biomart.table$allele_1 == 'G' |
+                                             biomart.table$allele_1 == 'C'),]
+      
+      
+      biomart.table <- biomart.table[which(biomart.table$allele_2 == 'A' |
+                                             biomart.table$allele_2 == 'T' |
+                                             biomart.table$allele_2 == 'G' |
+                                             biomart.table$allele_2 == 'C'),]
+      
+      biomart.table <- biomart.table[which(biomart.table$minor_allele == 'A' |
+                                             biomart.table$minor_allele == 'T' |
+                                             biomart.table$minor_allele == 'G' |
+                                             biomart.table$minor_allele == 'C'),]
+      
+      biomart.table$major_allele <- NA
+      
+      for (i in 1:nrow(biomart.table)) 
+      {
+        if(biomart.table$minor_allele[i] == biomart.table$allele_1[i])
+        {
+          biomart.table$major_allele[i] <- biomart.table$allele_2[i]
+        }else
+        {
+          biomart.table$major_allele[i] <- biomart.table$allele_1[i]
+        }
+      }
+      
+      # filter indata
+      
+      indata <<- indata[biomart.table$refsnp_id,]
+      
+      # define indata alleles
+      indata_alleles <- apply(indata, 1,FUN =  function(y)
+      {
+        y <- as.character(sapply(y, function(x)
+        {
+          x <- strsplit(as.character(x),split = "")[[1]]
+          return(x)
+        }))
+        return(y)
+      })
+      
+      indata_alleles <- t(indata_alleles)
+      indata_alleles <- apply(indata_alleles, 1,unique)
+      
+      indata_alleles <- t(indata_alleles)
+      indata_alleles <- setNames(split(indata_alleles, seq(nrow(indata_alleles))), rownames(indata_alleles))
+      
+      
+      
+      biomart.table$indata_minor_allele <- NA
+      biomart.table$indata_major_allele <- NA
+      
+      for (i in 1:nrow(biomart.table))
+      {
+        #minor allele
+        if(biomart.table$minor_allele[i] == indata_alleles[which(names(indata_alleles) %in% biomart.table$refsnp_id[i])][[1]][1] |
+           biomart.table$minor_allele[i] == indata_alleles[which(names(indata_alleles) %in% biomart.table$refsnp_id[i])][[1]][2])
+        {
+          biomart.table$indata_minor_allele[i] <- biomart.table$minor_allele[i]
+        }else
+        {
+          biomart.table$indata_minor_allele[i] <- pipeline.change.complementary.nucleotide(biomart.table$minor_allele[i])
+        }
+        
+        #major allele
+        if(biomart.table$major_allele[i] == indata_alleles[which(names(indata_alleles) %in% biomart.table$refsnp_id[i])][[1]][1] |
+           biomart.table$major_allele[i] == indata_alleles[which(names(indata_alleles) %in% biomart.table$refsnp_id[i])][[1]][2])
+        {
+          biomart.table$indata_major_allele[i] <- biomart.table$major_allele[i]
+        }else
+        {
+          biomart.table$indata_major_allele[i] <- pipeline.change.complementary.nucleotide(biomart.table$major_allele[i])
+        }
+        
+      }
+      
+      
+      biomart.table <- split(biomart.table[,c('minor_allele','major_allele', 'indata_minor_allele','indata_major_allele')], biomart.table$refsnp_id)
+      
+      
+      for (i in 1:nrow(indata))
+      {
+        indata[i,] <<- sapply(indata[i,], FUN = function(x)
+        {
+          x <- strsplit(as.character(x),split = "")[[1]]
+          if(length(unique(x)) > 1)
+          {
+            x <- 1
+            return(x)
+            break()
+          }
+          if(unique(x) == biomart.table[which(names(biomart.table) %in% rownames(indata)[i])][[1]]$indata_minor_allele)
+          {
+            x <- 2
+            return(x)
+            break()
+          }
+          if(unique(x) == biomart.table[which(names(biomart.table) %in% rownames(indata)[i])][[1]]$indata_major_allele)
+          {
+            x <- 0
+          }
+          else
+          {
+            x <- 0
+            return(x)
+            break()
+          }
+          
+        })
+      }
+      
+
+      
+    
+      
+    }
+    
+  }
+
+
+  
+  #minor allele encoding
   if(preferences$indata.transformation == 'minor.major.alleles') # calculate minor and major aleles
   {
     minor.major.alleles <<- as.data.frame(matrix(NA, nrow = nrow(indata), ncol = 5))
@@ -136,8 +312,7 @@ pipeline.indata.transformation <- function()
             snp[j,'disease_associated_allele_in_indata'] <- snp[j,'disease_associated_allele']
           }else
           {
-            #
-            x <- c(x, names(indata_alleles[i]))
+            
             snp[j,'disease_associated_allele_in_indata'] <-pipeline.change.complementary.nucleotide(snp[j,'disease_associated_allele'])
           }
           
@@ -146,8 +321,7 @@ pipeline.indata.transformation <- function()
             snp[j,'neutral_allele_in_indata'] <- snp[j,'neutral_allele']
           }else
           {
-            #
-            x <- c(x, names(indata_alleles[i]))
+
             snp[j,'neutral_allele_in_indata'] <-pipeline.change.complementary.nucleotide(snp[j,'neutral_allele'])
           }
           
