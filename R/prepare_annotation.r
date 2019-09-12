@@ -69,7 +69,13 @@ pipeline.prepareAnnotation <- function()
   #   return()
   # }
   # 
-  biomart.table.snp <- NULL
+  if(preferences$indata.transformation != 'global.minor.major.alleles')
+  {
+    util.call(pipeline.BiomartAvailabilityForIndataTransformation, env)
+  }
+  
+  
+  biomart.table.snp <- NULL  
   
   
   mart_snp <- useMart(biomart=preferences$database.biomart.snps, host=preferences$database.host)
