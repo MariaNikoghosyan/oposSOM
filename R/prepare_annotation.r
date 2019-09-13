@@ -125,9 +125,9 @@ pipeline.prepareAnnotation <- function()
     preferences$activated.modules$geneset.analysis <<- FALSE
   } else
   {
-    h <- biomart.table[,2]
-    names(h) <- biomart.table[,1]
-    gene.info$names[as.character(unique(biomart.table[,1]))] <<- h[as.character(unique(biomart.table[,1]))]
+    # h <- biomart.table[,2]
+    # names(h) <- biomart.table[,1]
+    # gene.info$names[as.character(unique(biomart.table[,1]))] <<- h[as.character(unique(biomart.table[,1]))]
 
     # h <- biomart.table[,"description"]
     # names(h) <- biomart.table[,1]
@@ -198,10 +198,25 @@ pipeline.prepareAnnotation <- function()
   unique.protein.ids <<- unique(gene.info$ids)
   unique.protein.ids <<- unique.protein.ids[which(unique.protein.ids!="")]
   
+  unique.snps.ids <<- unique(names(gene.info$ids))
+  unique.snps.ids <<- unique.snps.ids[which(unique.snps.ids != '')]
+  
   suppressWarnings({  biomart.table <- getBM(c("ensembl_gene_id", "go_id", "name_1006", "namespace_1003"), "ensembl_gene_id", unique.protein.ids, mart, checkFilters=FALSE) })
+  
+  
+  
+  biomart.table <- merge(biomart.table, biomart.table.snp, by = 'ensembl_gene_id')
+  
   biomart.table <- biomart.table[which( apply(biomart.table,1,function(x) sum(x=="") ) == 0 ),]  
-  gs.def.list <<- tapply(biomart.table[,1], biomart.table[,2], c)
-  gs.def.list <<- lapply(gs.def.list, function(x) { list(Genes=x, Type="") })
+  gs.def.list <<- tapply(biomart.table[,1],biomart.table[,2], c)
+  gs.def.list <<- lapply(gs.def.list, function(x) { list(Genes=x, Type="", SNP ='') })
+  
+  for (i in seq_along(gs.def.list))
+  {
+    o <- which(biomart.table[,2] %in% names(gs.def.list)[i])
+    gs.def.list[[i]]$SNP <<- biomart.table[o,5]
+  }
+
 
 
   if (length(gs.def.list) > 0)
@@ -231,7 +246,7 @@ pipeline.prepareAnnotation <- function()
 
   if(length(chromosome.list)>0)
   {
-    chr.gs.list <- lapply(chromosome.list, function(x) { list(Genes=gene.info$ids[unlist(x)], Type="Chr") })
+    chr.gs.list <- lapply(chromosome.list, function(x) { list(Genes=gene.info$ids[unlist(x)], Type="Chr", SNP=names(gene.info$ids[unlist(x)])) })
     names(chr.gs.list) <- paste("Chr", names(chromosome.list))
     gs.def.list <<- c(gs.def.list, chr.gs.list)
   }
