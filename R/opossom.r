@@ -43,6 +43,7 @@ opossom.new <- function(preferences=NULL)
   #added
   env$minor.major.alleles <- NULL
   env$disease.alleles <- NULL
+  env$unique.protein.ids <- NULL
  # env$multiallelic.snps <- NULL
   
   
@@ -123,6 +124,7 @@ opossom.run <- function(env)
     return()
   }
   
+
   #added, transform indata into numeric matrix
   if(env$preferences$SNPs.analysis) 
   {
