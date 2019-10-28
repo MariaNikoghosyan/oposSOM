@@ -410,8 +410,182 @@ modules.report.sheets <- function(spot.list, main, path)
 
         text(x.coords[4], y.coords, names(top.gs.p), cex=0.6, adj=0)
       }
+    
+      
+      
       
     }
+    
+    
+    ## added
+    ## snp-disease association report
+    if(sum(sample.with.spot) != 0)
+    {
+      n.sets <- 15
+      n.cat <- length(unique(sapply(gs.def.list, function(x) { x$Type })))
+      
+      diseases <- sort(spot.list$spots[[m]]$Fisher.p[names(which( sapply(gs.def.list, function(x)x$Type) == "disease" ))])[1:n.sets]
+      disease_snps <- gwas.df.list[names(diseases)]
+      disease_snps <- lapply(disease_snps, function(x)
+      {
+        x$SNP <- intersect(x$SNP, rownames(indata))
+        return(x)
+        
+      })
+      
+      # define samples groups and colors
+      sample.with.spot.grouped <- sample.with.spot[which(sample.with.spot == TRUE)]
+      sample.with.spot.grouped <- group.labels[which(sample.with.spot == TRUE)]
+      sample.with.spot.grouped <- sample.with.spot.grouped[order(sample.with.spot.grouped)]
+      
+      sample.with.spot.grouped.colors <- group.colors[which(sample.with.spot == TRUE)]
+      sample.with.spot.grouped.colors <- sample.with.spot.grouped.colors[names(sample.with.spot.grouped)]
+      
+      # obtain indata with row genotypes
+      indata_diseases <- as.data.frame(primary.indata)
+      for (i in 1:ncol(indata_diseases)) 
+      {
+        indata_diseases[,i] <- as.numeric(indata_diseases[,i])
+        
+      }
+      indata_diseases <- indata_diseases[, names(sample.with.spot.grouped)]
+      
+      # define snps associated with the top disease in the spot
+      # and sum the disease-associated alleles for each disease
+      disease.list.in.spot <- as.list(names(disease_snps))
+      names(disease.list.in.spot) <- names(disease_snps)
+      disease.list.in.spot <- lapply(disease.list.in.spot, function(x){list(Disease = x, Samples = colnames(indata_diseases),
+                                                                            SNPs = '',
+                                                                            Allele.count = vector(mode = 'numeric', length = ncol(indata_diseases)))})
+      
+      for (i in seq_along(disease.list.in.spot)) 
+      {
+        disease.list.in.spot[[i]]$SNPs <- rownames(indata_diseases)[which(rownames(indata_diseases) %in% 
+                                                                            disease_snps[[ names(disease.list.in.spot)[i]]]$SNP)]
+      }
+      
+      for (i in seq_along(disease.list.in.spot)) 
+      {
+        
+        disease.list.in.spot[[i]]$Allele.count <- sapply(disease.list.in.spot[[i]]$Samples, function(x){
+          x = sum(as.numeric(indata_diseases[disease.list.in.spot[[i]]$SNPs, x]))
+        })
+      }
+      
+      
+      indata_diseases <- as.data.frame(matrix(0, nrow = length(disease_snps), ncol = length(sample.with.spot.grouped)))
+      rownames(indata_diseases) <- names(disease.list.in.spot)
+      colnames(indata_diseases) <- names(sample.with.spot.grouped)
+      k <-0
+      
+      
+      for (i in 1:nrow(indata_diseases)) 
+      {
+        indata_diseases[i,] <- disease.list.in.spot[[rownames(indata_diseases)[i]]]$Allele.count
+        
+        if(length(unique(as.numeric(indata_diseases[i,]))) <= 1 )
+        {
+          if(unique(as.numeric(indata_diseases[i,])) == 0)
+          {
+            k <- c(k,i)
+          }
+          
+        }
+      }
+      
+      if(length(k) > 1)
+      {
+        indata_diseases <- indata_diseases[-k,]
+      }
+      
+      if(nrow(indata_diseases) > 0)
+      {
+        indata_diseases_fractions <- apply(indata_diseases, 2, function(x)
+        {
+          fractions <- sum(x)
+          x <- sapply(x, FUN = function(k){k <- k/fractions})
+          
+        })
+        
+        
+        # plot
+        layout(matrix(c(5,2,1,0,0,3,0,0,4), nrow = 3, ncol = 3),  heights=c(0.5,0.4,6), widths=c(5,0.2,3))
+        
+        colors <- c('#174656' ,'#779966', '#930900','#ffa47a' ,'#00897a', '#aa9977','#ddd6c9','#bbbb77' ,
+                    '#fff993', '#ffaa66','#557755' ,'#bbffee', '#58a184','#f0caa2' ,'#115500')
+        colors <- colors[1:nrow(indata_diseases)]
+        
+        par(mar=c(0,2,0,0))
+        barplot(indata_diseases_fractions, col = colors, space = 0, border = NA, xlab = '', xaxs = "i", xaxs= 'i')
+        
+        
+        
+        par(mar=c(1,2,0,0))
+        
+        if (length(unique(sample.with.spot.grouped)) > 0)
+        {
+          image(cbind(1:length(sample.with.spot.grouped)), col = sample.with.spot.grouped.colors, axes = FALSE)
+          box()
+        } else
+        {
+          frame()
+        }
+        
+        
+        par(mar=c(0.5,1,0,0))
+        
+        
+        image(rbind(1:nrow(indata_diseases)), col = colors, axes = FALSE)
+        box()
+        
+        par(mar=c(0,2,0,0))
+        
+        plot(0, type="n", xlab="", ylab="", axes=FALSE, xlim=c(0,1),
+             ylim=0.5+c(0,nrow(indata_diseases)), yaxs="i")
+        
+        text(0.05,
+             1:nrow(indata_diseases),
+             rownames(indata_diseases),
+             adj=0, cex=1.1, col=colors) #0.6
+        
+        par(mar=c(2,0,0,0))
+        
+        plot(0, type="n", xlab="", ylab="", axes=FALSE, xlim=c(0,1),
+             ylim=0.5+c(0,length(sample.with.spot.grouped)), yaxs="i")
+        text(0.05,
+             7,
+             'Disease distribution within the spot',
+             adj=0, cex=1.5, col='black') #0.6
+        
+        
+        # plot the snp allele count for each disease
+        # 15 diseases
+        #layout(matrix(1:15, nrow = 5, ncol = 3), heights=c(0.5,0.4,6), widths=c(5,0.2,3))
+        layout(matrix(1:15, nrow = 5, ncol = 3))
+        
+        for (i in 1:nrow(indata_diseases)) 
+        {
+          par(mar = c(4,4,4,4))
+          
+          # barplot(as.numeric(indata_diseases[i,]),col = as.character(sample.with.spot.grouped.colors), main = rownames(indata_diseases)[i],
+          #         names.arg= rep("",ncol(indata_diseases)), border = NA, ylab = 'Allele count', xlab = 'samples within the spot')
+          # box()
+          
+          barplot(as.numeric(indata_diseases[i,]),col = as.character(sample.with.spot.grouped.colors), main = rownames(indata_diseases)[i],
+                  border = NA, axes = F )
+          
+          title(xlab = 'samples within the spot',ylab = 'Allele count',  line=0, cex.lab=1.2)
+          
+          axis(side = 4)
+          mtext('', side = 4, line = 3)
+          box()
+          
+          
+        }
+      }
+    }
+    
+    
   }
   
   dev.off()

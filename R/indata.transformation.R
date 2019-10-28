@@ -173,7 +173,7 @@ pipeline.indata.transformation <- function()
     
       
     }
-    
+    primary.indata <<- indata
   }
 
 
@@ -250,6 +250,7 @@ pipeline.indata.transformation <- function()
 
       })
     }
+    primary.indata <<- indata
   }
 
   #disease allele encoding
@@ -434,7 +435,7 @@ pipeline.indata.transformation <- function()
 
 
     indata <<- indata_numeric_genotypes
-
+    primary.indata <<- indata_numeric_genotypes
     
     
   }

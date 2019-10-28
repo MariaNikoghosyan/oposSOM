@@ -4,7 +4,8 @@ pipeline.genesetProfilesAndMaps <- function()
   util.info("Writing:", file.path(dirname, "*.{csv,pdf}"))
 	progressbar <-newProgressBar(min = 0, max = nrow(samples.GSZ.scores)); cat("\r")
   
-  ylim <- quantile(samples.GSZ.scores,c(0.01,0.99))
+  #ylim <- quantile(samples.GSZ.scores,c(0.01,0.99))
+  ylim <- quantile(samples.GSZ.scores,c(0.01,0.99), na.rm = T) ################ added na.rm = T
   off.thres <- -sd(samples.GSZ.scores)
   on.thres <- sd(samples.GSZ.scores)
   

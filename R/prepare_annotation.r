@@ -264,9 +264,14 @@ pipeline.prepareAnnotation <- function()
 
   
   gs.def.list <<- gs.def.list[ which(sapply(sapply(gs.def.list, head, 1), length) >= 2) ]
-  
+
+
+  data(snposom.disease)
+  gs.def.list <<- c(gs.def.list, gwas.df.list)
+
   ##########
   ## added
+
   
   # for (i in 1:length(gs.def.list))
   #   {
@@ -276,6 +281,11 @@ pipeline.prepareAnnotation <- function()
   #   })
   #   
   # }
+  gs.def.list <<- lapply(gs.def.list, function(x) {
+    x$Genes <- intersect(x$Genes, unique.protein.ids)
+    return(x)
+  })
+  
   
 
   if (length(gs.def.list) > 0)

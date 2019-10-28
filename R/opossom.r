@@ -45,6 +45,7 @@ opossom.new <- function(preferences=NULL)
   env$minor.major.alleles <- NULL
   env$disease.alleles <- NULL
   env$unique.protein.ids <- NULL
+  env$primary.indata <- NULL
  # env$multiallelic.snps <- NULL
   
   
@@ -244,7 +245,7 @@ opossom.run <- function(env)
       util.call(pipeline.genesetOverviews, env)
       
       util.info("Plotting Geneset Profiles and Maps")
-      util.call(pipeline.genesetProfilesAndMaps, env)
+      #util.call(pipeline.genesetProfilesAndMaps, env) ### changes do not call (very long)
       
       util.info("Calculating Cancer Hallmark Enrichment")
       util.call(pipeline.cancerHallmarks, env)

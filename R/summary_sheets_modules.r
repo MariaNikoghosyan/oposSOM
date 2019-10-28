@@ -17,7 +17,7 @@ pipeline.summarySheetsModules <- function()
 
   modules.report.sheets(spot.list=spot.list.overexpression, main="Overexpression Spots", path=file.path(dirname,"Report.pdf") )
   modules.profiles(spot.list=spot.list.overexpression, main="Overexpression Spots", path=file.path(dirname,"Profiles.pdf") )
-  modules.chromosomes(spot.list=spot.list.overexpression, main="Overexpression Spots", path=file.path(dirname,"Chromosomes.pdf") )
+  #modules.chromosomes(spot.list=spot.list.overexpression, main="Overexpression Spots", path=file.path(dirname,"Chromosomes.pdf") )
   modules.relations(spot.list=spot.list.overexpression, main="Overexpression Spots", path=file.path(dirname,"Relations.pdf") )
   
   
@@ -47,7 +47,7 @@ pipeline.summarySheetsModules <- function()
   
   modules.report.sheets(spot.list=spot.list.kmeans, main="K-Means Cluster", path=file.path(dirname,"Report.pdf") )
   modules.profiles(spot.list=spot.list.kmeans, main="K-Means Cluster", path=file.path(dirname,"Profiles.pdf") )
-  modules.chromosomes(spot.list=spot.list.kmeans, main="K-Means Cluster", path=file.path(dirname,"Chromosomes.pdf") )
+  #modules.chromosomes(spot.list=spot.list.kmeans, main="K-Means Cluster", path=file.path(dirname,"Chromosomes.pdf") )
   modules.relations(spot.list=spot.list.kmeans, main="K-Means Cluster", path=file.path(dirname,"Relations.pdf") )
   
   
@@ -59,7 +59,7 @@ pipeline.summarySheetsModules <- function()
   
   modules.report.sheets(spot.list=spot.list.dmap, main="D-Cluster", path=file.path(dirname,"Report.pdf") )
   modules.profiles(spot.list=spot.list.dmap, main="D-Cluster", path=file.path(dirname,"Profiles.pdf") )
-  modules.chromosomes(spot.list=spot.list.dmap, main="D-Cluster", path=file.path(dirname,"Chromosomes.pdf") )
+  #modules.chromosomes(spot.list=spot.list.dmap, main="D-Cluster", path=file.path(dirname,"Chromosomes.pdf") )
   modules.relations(spot.list=spot.list.dmap, main="D-Cluster", path=file.path(dirname,"Relations.pdf") )
   
   
@@ -73,7 +73,7 @@ pipeline.summarySheetsModules <- function()
     
     modules.report.sheets(spot.list=spot.list.group.overexpression, main="Group Overexpression Spots", path=file.path(dirname,"Report.pdf") )
     modules.profiles(spot.list=spot.list.group.overexpression, main="Group Overexpression Spots", path=file.path(dirname,"Profiles.pdf") )
-    modules.chromosomes(spot.list=spot.list.group.overexpression, main="Group Overexpression Spots", path=file.path(dirname,"Chromosomes.pdf") )
+   # modules.chromosomes(spot.list=spot.list.group.overexpression, main="Group Overexpression Spots", path=file.path(dirname,"Chromosomes.pdf") )
     modules.relations(spot.list=spot.list.group.overexpression, main="Group Overexpression Spots", path=file.path(dirname,"Relations.pdf") )
   }
 
