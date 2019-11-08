@@ -44,9 +44,9 @@ opossom.new <- function(preferences=NULL)
   #added
   env$minor.major.alleles <- NULL
   env$disease.alleles <- NULL
-  env$unique.protein.ids <- NULL
+  env$unique.snps.ids <- NULL
   env$primary.indata <- NULL
- # env$multiallelic.snps <- NULL
+ #env$multiallelic.snps <- NULL
   
   
   # Generate some additional letters
@@ -259,7 +259,7 @@ opossom.run <- function(env)
     util.call(pipeline.summarySheetsSamples, env)
     
     util.info("Plotting Summary Sheets (Modules & PATs)")
-    util.call(pipeline.summarySheetsModules, env)
+    util.call(pipeline.summarySheetsModules, env) ## modules
     util.call(pipeline.summarySheetsPATs, env)
       
 

@@ -1,9 +1,17 @@
 pipeline.genesetStatisticIntegral <- function()
 {
+  # spot.fisher.p <- function(spot)
+  # {
+  #   spot$Fisher.p <- GeneSet.Fisher(unique(na.omit(gene.info$ids[spot$genes])),
+  #                                   unique.protein.ids, gs.def.list, sort=TRUE)
+  # 
+  #   return(spot)
+  # }
+  
   spot.fisher.p <- function(spot)
   {
-    spot$Fisher.p <- GeneSet.Fisher(unique(na.omit(gene.info$ids[spot$genes])),
-                                    unique.protein.ids, gs.def.list, sort=TRUE)
+    spot$Fisher.p <- GeneSet.Fisher(unique(na.omit(names(gene.info$ids[spot$genes]))),
+                                    unique.snps.ids, gs.def.list, sort=TRUE)
 
     return(spot)
   }
@@ -22,3 +30,5 @@ pipeline.genesetStatisticIntegral <- function()
   spot.list.dmap$spots <<- lapply( spot.list.dmap$spots, spot.fisher.p)
 
 }
+
+

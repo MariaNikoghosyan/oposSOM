@@ -1,7 +1,11 @@
-#library(oposSOM)
-
+library(oposSOM)
+library(igraph)
+library(biomaRt)
+library(tsne)
+library(ape)
+library(pixmap)
 #load data
-load("C:/Users/nikoghosyan/Documents/oposSOM-master/oposSOM-master/example_data/example_expression.RData")
+#load("C:/Users/nikoghosyan/Documents/oposSOM-master/oposSOM-master/example_data/example_expression.RData")
 
 env <- opossom.new(list(dataset.name = "Unnamed",
                         dim.1stLvlSom = "auto",
@@ -38,11 +42,16 @@ env <- opossom.new(list(dataset.name = "Unnamed",
 
 #env$indata <- read.table('data_for_examples/sgdp_armenian_genotypes.csv', sep = '\t', header = T, as.is = T)
 
-
-env$indata <- gene_exp[1:800, ]
+env$indata <- read.table('data_for_examples/SGDP_data_wiht_letter_genotypes.csv', sep = '\t', header = T, as.is = T)
+env$indata <- env$indata [1:500, ]
 
 #env$indata <- env$indata[sample(1:nrow(env$indata), 500), sample(1:ncol(env$indata), 100)] 
+env$group.labels <- read.table('data_for_examples/training.group.labels.csv', sep = '\t', header = T, as.is = T)
+env$group.labels <-as.character( env$group.labels$geo_region)
 
+
+env$group.colors <- read.table('data_for_examples/training.group.color.csv', sep = '\t', header = T, as.is = T)
+env$group.colors <- as.character(env$group.colors$color)
 
 attach(env)
 
@@ -51,6 +60,8 @@ attach(env)
 
 
 detach(env)
+
+
 
 
 #write.table(env$indata, 'sgdp_armenian_minor_major_alleles_encoded_indata.csv', sep = '\t')

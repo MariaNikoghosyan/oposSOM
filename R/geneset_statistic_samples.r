@@ -1,3 +1,5 @@
+### shold be changes to snps enrichment
+
 pipeline.genesetStatisticSamples <- function()
 {
 

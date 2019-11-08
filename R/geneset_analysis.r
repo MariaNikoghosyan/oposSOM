@@ -22,7 +22,8 @@ GeneSet.Fisher <- function(list.ids, all.ids, gs.def.list, sort=FALSE)
 
   fn <- function(x, list.ids, all.ids)
   {
-    set.ids <- x$Genes
+    #set.ids <- x$Genes
+    set.ids <- x$SNP
 
     n.list.set <- sum(set.ids %in% list.ids)
     n.set <- sum(! set.ids %in% list.ids)
